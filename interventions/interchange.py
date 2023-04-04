@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from utils import load_model, mask_out, extract_from_config, InterventionBase
+from .utils import load_model, mask_out, extract_from_config, InterventionBase
 
 class InterchangeInterventionArgs():
     '''
