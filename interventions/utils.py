@@ -1,3 +1,5 @@
+from typing import Optional, Tuple, Union, List
+
 from transformers.configuration_utils import PretrainedConfig
 
 def load_model(model_name):
