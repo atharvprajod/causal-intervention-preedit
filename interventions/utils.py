@@ -3,16 +3,6 @@ import numpy as np
 import itertools
 from transformers.configuration_utils import PretrainedConfig
 
-
-def mask_out(input_ids, pron_loc, option, mask_id):
-    # note annotations are shifted by 1 because special tokens were omitted
-    return (
-        input_ids[: pron_loc[0]]
-        + [mask_id for _ in range(len(option))]
-        + input_ids[pron_loc[-1] :]
-    )
-
-
 def extract_from_config(config: PretrainedConfig):
     if config.model_type in ["albert", "bert", "roberta"]:
         return config.num_hidden_layers, config.num_attention_heads
