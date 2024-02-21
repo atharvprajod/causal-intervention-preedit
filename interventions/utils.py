@@ -118,9 +118,5 @@ class InterventionBase:
         else:
             # return the id of the first word
             return (candidates[candidate_test][0], 'unique match!')
-        
-    def calc_logprob_skeleton(
-        sent: str,
-        cont: str,
-        intervention
-    ):
+
+
