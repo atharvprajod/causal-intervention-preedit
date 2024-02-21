@@ -77,15 +77,15 @@ class InterchangeIntervention(InterventionBase):
         multihead: bool = True,
         heads: List[int] = [],
     ):
-        '''
-        under construction
-        '''
         # convert targets to tokens
         for phrase, sent in zip(targets, self.sents):
             token_ids = []
             for word in phrase:
                 token_ids.extend(self.convert_to_tokens(word, sent))
 
+        '''
+        below needs to be updated
+        '''
         interventions = {}
         for token_id in target_tokens:
             for rep in ["lay", "qry", "key", "val"]:
@@ -109,27 +109,28 @@ class InterchangeIntervention(InterventionBase):
         interventions: dict,
         batch_size: int,
     ):
-        '''
-        under construction
-        '''
         probs = []
-        for option in self.option_tokens:
-            masked_ids_1 = mask_out(
-                self.input_ids_1, self.pron_locs_tokens[0], option, self.mask_id
-            )
-            masked_ids_2 = mask_out(
-                self.input_ids_2, self.pron_locs_tokens[1], option, self.mask_id
-            )
+        for cont in self.conts:
+            cont_start_1 = len(self.tokenizer(self.sents[0]).input_ids) # assumes gpt2 type tokenizer
+            cont_start_2 = len(self.tokenizer(self.sents[1]).input_ids) # assumes gpt2 type tokenizer
+
+            sent_1 = self.sents[0] + " " + cont
+            sent_2 = self.sents[1] + " " + cont
 
             input_ids_all = torch.tensor(
                 [
-                    *[masked_ids_1 for _ in range(batch_size)],
-                    *[masked_ids_2 for _ in range(batch_size)],
+                    *[self.tokenizer(sent_1) for _ in range(batch_size)],
+                    *[self.tokenizer(sent_2) for _ in range(batch_size)],
                 ]
-            )
-            outputs = self.skeleton(self.model, input_ids_all, interventions)
+                )
+
+            outputs = self.skeleton_model(self.model, input_ids_all, interventions)
             logprobs = F.log_softmax(outputs["logits"], dim=-1)
             logprobs_1, logprobs_2 = logprobs[:batch_size], logprobs[batch_size:]
+
+            '''
+            below needs to be updated
+            '''
             evals_1 = [
                 logprobs_1[:, self.pron_locs_tokens[0][0] + i, token].numpy()
                 for i, token in enumerate(option)
@@ -149,19 +150,20 @@ class InterchangeIntervention(InterventionBase):
 
     def run(
         self,
-        target: Tuple[str],
+        targets: Tuple[str, str],
         rep_types: List[str],
         multihead: bool = True,
         heads: List[int] = [],
     ):
         '''
-        under construction
+        below needs to be updated
         '''
         self.input_ids_1 = self.tokenizer(self.sents[0]).input_ids
         self.input_ids_2 = self.tokenizer(self.sents[1]).input_ids
 
-        target_tokens_1 = self.convert_to_tokens(target, self.sents[0])
-        target_tokens_2 = self.convert_to_tokens(target, self.sents[1])
+        target_tokens_1 = self.convert_to_tokens(targets[0], self.sents[0])
+        target_tokens_2 = self.convert_to_tokens(targets[1], self.sents[1])
+        assert len(target_tokens_1) == len(target_tokens_2), "targets do not have the same number of tokens"
         interventions_empty = {"lay": [], "qry": [], "key": [], "val": []}
         batch_size = 1 if multihead else len(heads)
 

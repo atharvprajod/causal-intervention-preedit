@@ -14,14 +14,13 @@ from interventions import interchange
 
 sent_1 = "In one word Yes/No, is the property is_small.1 true for the concept salamander?"
 sent_2 = "In one word Yes/No, is the property is_small.1 true for the concept dinosaur?"
-cont_1 = "Yes"
-cont_2 = "No"
+conts = ["Yes","No"] # for multiple choice questions, "conts" may have more than two elements, e.g. ["A: Sad", "B: Happy", "C: Angry"]
 
-config = interchange.InterchangeInterventionConfig(sents=[sent_1,sent_2],conts=[cont_1,cont_2])
+config = interchange.InterchangeInterventionConfig(sents=[sent_1,sent_2],conts=conts)
 intervention_model = InterchangeIntervention("gpt2", config)
 effects = intervention_model.run(
-    targets=["slamander", "dinosaur"],
-    rep_type=["lay","qry","key","val"],
+    targets=["slamander", "dinosaur"], # target words to swap
+    rep_type=["lay","qry","key","val"], # representations to swap
     multihead=True)
 ```
 
