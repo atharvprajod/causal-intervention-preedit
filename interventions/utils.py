@@ -32,6 +32,12 @@ class InterventionBase:
         word: str,
         sent: str,
     ):
+        '''
+        Finds "word" in "sent" and returns the position of the word in terms of tokens.
+        Returns the first match when there are mutliple matches
+        Assumes a gpt2 type tokenizer that does NOT have special tokens attached at the end, unlike BERT
+        For BERT, we need to shift start_id and end_id by one
+        '''
         word_ids, messages = self.find_word(word, sent)
         if messages=='no match':
             raise ValueError(f"No match found for {word} in {sent}")
