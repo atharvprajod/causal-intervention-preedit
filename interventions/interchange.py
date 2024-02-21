@@ -4,29 +4,57 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from .utils import load_model, mask_out, extract_from_config, InterventionBase
-
+from .utils import mask_out, extract_from_config, InterventionBase
 
 class InterchangeInterventionArgs:
     """
     Config class for the 'InterchangeIntervention'
     """
-
     def __init__(
         self,
         sents: Tuple[str, str],
-        options: Tuple[str, str],
-        pron_locs: Tuple[List[int], List[int]],
+        conts: List[str],
     ):
         """
-        sents: the list of the two sentences
-        options: the list of the two option noun phrases; they don't have to be in the sentences
-        pron_locs: location of the pronouns for each sentence; word-level, not token-level, indices
+        sents: minimal pair of sentences
+        conts: list of possible continuations
         """
         self.sents = sents
-        self.options = options
-        self.pron_locs = pron_locs
+        self.conts = conts
+        self.contexts = self.find_context()
 
+    def find_context(self):
+        sent_1 = self.sents[0]
+        sent_2 = self.sents[1]
+        if sent_1==sent_2:
+            return 0, "", ""
+        else:
+            split_sent_1 = sent_1.split(' ')
+            split_sent_2 = sent_2.split(' ')
+            min_sent_len = min(len(split_sent_1),len(split_sent_2))
+            # remove each word from the start until they are different
+            word_id = 0
+            while split_sent_1[word_id]==split_sent_2[word_id]:
+                word_id += 1
+                if word_id==min_sent_len:
+                    word_id -= 1
+                    break
+            start_id = word_id
+            # remove each word from the end until they are different
+            word_id = -1
+            while split_sent_1[word_id]==split_sent_2[word_id]:
+                word_id -= 1
+                if word_id==-min_sent_len-1:
+                    word_id += 1
+                    break
+            end_id = word_id+1 if word_id!=-1 else None
+
+            context_words_1 = split_sent_1[start_id:end_id]
+            context_words_2 = split_sent_2[start_id:end_id]
+
+            context_1 = ' '.join(context_words_1)
+            context_2 = ' '.join(context_words_2)
+            return [context_1, context_2]
 
 class InterchangeIntervention(InterventionBase):
     """
@@ -36,28 +64,15 @@ class InterchangeIntervention(InterventionBase):
     def __init__(self, model_name, interv_args):
         super().__init__("interchange")
 
-        tokenizer, model, skeleton, mask_id = load_model(model_name)
-        self.tokenizer = tokenizer
-        self.model = model
-        self.skeleton = skeleton
-        self.mask_id = model_args.mask_id
+        self.load_model(model_name)
         self.num_layers, self.num_heads = extract_from_config(self.model.config)
 
         self.sents = interv_args.sents
-        self.options = interv_args.options
-        self.pron_locs = interv_args.pron_locs
-
-        self.option_tokens = [
-            self.tokenize_without_sp_tokens(option) for option in self.options
-        ]
-        self.pron_locs_tokens = [
-            self.convert_to_tokens(loc, sent)
-            for loc, sent in zip(self.pron_locs, self.sents)
-        ]
+        self.conts = interv_args.conts
 
     def create_interventions(
         self,
-        target_tokens: List[int],
+        target_tokens: List[List[str]],
         rep_types: List[str],
         multihead: bool = True,
         heads: List[int] = [],
@@ -122,23 +137,17 @@ class InterchangeIntervention(InterventionBase):
 
     def run(
         self,
-        target: [List[int], List[int]],
+        target: str,
         rep_types: List[str],
         multihead: bool = True,
         heads: List[int] = [],
     ):
-        target_tokens = [
-            self.context_to_tokens(loc, sent) for loc, sent in zip(target, self.sents)
-        ]
-        assert np.all(np.array(target_tokens[0]) == np.array(target_tokens[1]))
-
         self.input_ids_1 = self.tokenizer(self.sents[0]).input_ids
         self.input_ids_2 = self.tokenizer(self.sents[1]).input_ids
 
+        target_tokens_1 = self.convert_to_tokens(target, self.sents[0])
+        target_tokens_2 = self.convert_to_tokens(target, self.sents[1])
         interventions_empty = {"lay": [], "qry": [], "key": [], "val": []}
-        interventions_layer = self.create_interventions(
-            target_tokens[0], rep_types, multihead, heads
-        )
         batch_size = 1 if multihead else len(heads)
 
         # run without intervention
