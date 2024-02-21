@@ -4,7 +4,7 @@ Work in progress...
 ### features:
 - Based on the causal-intervention-demo (https://huggingface.co/spaces/taka-yamakoshi/causal-intervention-demo) implementation
     - Package interventions as a tuple (head_id, position, swap_ids) where swap_ids is a pair of batch_ids to swap
-    - Batchify interventions across layers and heads into one pass (batch_size=num_layers*num_heads_per_layer*2)
+    - Batchify interventions across layers and heads into one pass (batch_size=num_layers\*num_heads_per_layer\*2)
 - Adjusted for autoregressive models (GPT2, LLaMA, etc.)
 - Accommodate cases with different number of tokens
 
