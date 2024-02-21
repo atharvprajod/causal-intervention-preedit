@@ -25,4 +25,5 @@ effects = intervention_model.run(
 ```
 
 ### TODOs
-- 
+- create skeleton for GPT2 (and other models)
+- adapt the intervention code
