@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from .utils import mask_out, extract_from_config, InterventionBase
 
-class InterchangeInterventionArgs:
+class InterchangeInterventionConfig:
     """
     Config class for the 'InterchangeIntervention'
     """
@@ -72,11 +72,20 @@ class InterchangeIntervention(InterventionBase):
 
     def create_interventions(
         self,
-        target_tokens: List[List[str]],
+        targets: Tuple[List[str],List[str]], # tuple of target phrases (list of words)
         rep_types: List[str],
         multihead: bool = True,
         heads: List[int] = [],
     ):
+        '''
+        under construction
+        '''
+        # convert targets to tokens
+        for phrase, sent in zip(targets, self.sents):
+            token_ids = []
+            for word in phrase:
+                token_ids.extend(self.convert_to_tokens(word, sent))
+
         interventions = {}
         for token_id in target_tokens:
             for rep in ["lay", "qry", "key", "val"]:
@@ -100,6 +109,9 @@ class InterchangeIntervention(InterventionBase):
         interventions: dict,
         batch_size: int,
     ):
+        '''
+        under construction
+        '''
         probs = []
         for option in self.option_tokens:
             masked_ids_1 = mask_out(
@@ -137,11 +149,14 @@ class InterchangeIntervention(InterventionBase):
 
     def run(
         self,
-        target: str,
+        target: Tuple[str],
         rep_types: List[str],
         multihead: bool = True,
         heads: List[int] = [],
     ):
+        '''
+        under construction
+        '''
         self.input_ids_1 = self.tokenizer(self.sents[0]).input_ids
         self.input_ids_2 = self.tokenizer(self.sents[1]).input_ids
 
