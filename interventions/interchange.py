@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from .utils import mask_out, extract_from_config, InterventionBase
+from .utils import extract_from_config, InterventionBase
 
 class InterchangeInterventionConfig:
     """
@@ -78,10 +78,13 @@ class InterchangeIntervention(InterventionBase):
         heads: List[int] = [],
     ):
         # convert targets to tokens
+        target_ids = []
         for phrase, sent in zip(targets, self.sents):
             token_ids = []
             for word in phrase:
                 token_ids.extend(self.convert_to_tokens(word, sent))
+            target_ids.append(token_ids)
+        assert len(target_ids[0])==len(target_ids[1]), "targets do not have the same number of tokens"
 
         '''
         below needs to be updated
@@ -111,33 +114,32 @@ class InterchangeIntervention(InterventionBase):
     ):
         probs = []
         for cont in self.conts:
-            cont_start_1 = len(self.tokenizer(self.sents[0]).input_ids) # assumes gpt2 type tokenizer
-            cont_start_2 = len(self.tokenizer(self.sents[1]).input_ids) # assumes gpt2 type tokenizer
+            cont_start_1 = len(self.tokenizer(self.sents[0]).input_ids)-1 # assumes gpt2 type tokenizer/model
+            cont_start_2 = len(self.tokenizer(self.sents[1]).input_ids)-1 # assumes gpt2 type tokenizer/model
+            cont_tokens = self.tokenize_without_sp_tokens(cont)
 
             sent_1 = self.sents[0] + " " + cont
             sent_2 = self.sents[1] + " " + cont
 
-            input_ids_all = torch.tensor(
+            input_ids_all = self.tokenizer(
                 [
-                    *[self.tokenizer(sent_1) for _ in range(batch_size)],
-                    *[self.tokenizer(sent_2) for _ in range(batch_size)],
-                ]
-                )
+                    *[sent_1 for _ in range(batch_size)],
+                    *[sent_2 for _ in range(batch_size)],
+                ],
+                return_tensors="pt", 
+                padding="longest")["input_ids"]
 
             outputs = self.skeleton_model(self.model, input_ids_all, interventions)
             logprobs = F.log_softmax(outputs["logits"], dim=-1)
             logprobs_1, logprobs_2 = logprobs[:batch_size], logprobs[batch_size:]
 
-            '''
-            below needs to be updated
-            '''
             evals_1 = [
-                logprobs_1[:, self.pron_locs_tokens[0][0] + i, token].numpy()
-                for i, token in enumerate(option)
+                logprobs_1[:, cont_start_1+i, token].numpy()
+                for i, token in enumerate(cont_tokens)
             ]
             evals_2 = [
-                logprobs_2[:, self.pron_locs_tokens[1][0] + i, token].numpy()
-                for i, token in enumerate(option)
+                logprobs_2[:, cont_start_2+i, token].numpy()
+                for i, token in enumerate(cont_tokens)
             ]
             probs.append(
                 [np.exp(np.mean(evals_1, axis=0)), np.exp(np.mean(evals_2, axis=0))]
