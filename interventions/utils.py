@@ -95,7 +95,7 @@ class InterventionBase:
 
         elif model_name.startswith("meta-llama/Llama-2"):
             from transformers import AutoTokenizer, LlamaForCausalLM
-            from skeletons.skeleton_modeling_llama import SkeletonLlamaForCausalLM
+            from .skeletons.skeleton_modeling_llama import SkeletonLlamaForCausalLM
             self.tokenizer = AutoTokenizer.from_pretrained(model_name,cache_dir=cache_dir)
             self.model = LlamaForCausalLM.from_pretrained(model_name,cache_dir=cache_dir)
             self.model.eval()
