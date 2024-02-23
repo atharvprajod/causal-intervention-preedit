@@ -79,10 +79,11 @@ class SkeletonLlamaForCausalLM():
 
                 cache_position = torch.arange(seq_len, dtype=torch.long, device=hidden.device)
                 attention_mask = attention_mask[:, :, cache_position, :split_key.shape[-2]]
+
+
                 #raw_attn = split_qry@split_key.permute(0,1,3,2)/math.sqrt(self.head_dim)
                 #raw_attn = raw_attn + attention_mask.to(hidden.device)
                 #attn = F.softmax(raw_attn, dim=-1, dtype=torch.float32).to(split_qry.dtype)
-
                 #trfm_indiv = attn@split_val
                 #trfm = trfm_indiv.permute(0,2,1,3).reshape(*hidden.size())
                 trfm = torch.nn.functional.scaled_dot_product_attention(
@@ -92,7 +93,7 @@ class SkeletonLlamaForCausalLM():
                     attn_mask=attention_mask,
                     dropout_p=0.0
                     )
-                
+
                 trfm = trfm.transpose(1, 2).contiguous()
                 trfm = trfm.view(batch_size, seq_len, self.hidden_size)
 
