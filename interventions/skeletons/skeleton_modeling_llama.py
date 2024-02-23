@@ -27,7 +27,7 @@ class SkeletonLlamaForCausalLM():
         self.lm_head = model.lm_head
         self.hidden_size = model.config.hidden_size
         self.num_heads = model.config.num_attention_heads
-        self.head_dim = self.hidden_size // self.num_attn_heads
+        self.head_dim = self.hidden_size // self.num_heads
     
     def swap_reps(self, interv_info, orignl):
         new_state = orignl.clone()
