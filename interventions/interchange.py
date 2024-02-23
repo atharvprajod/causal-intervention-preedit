@@ -61,14 +61,14 @@ class InterchangeIntervention(InterventionBase):
     Performs interchange interventions
     """
 
-    def __init__(self, model_name, interv_args):
+    def __init__(self, model_name, interv_config, **model_args):
         super().__init__("interchange")
 
-        self.load_model(model_name)
-        self.num_layers, self.num_heads = extract_from_config(self.model.config)
+        self.sents = interv_config.sents
+        self.conts = interv_config.conts
 
-        self.sents = interv_args.sents
-        self.conts = interv_args.conts
+        self.load_model(model_name, **model_args)
+        self.num_layers, self.num_heads = extract_from_config(self.model.config)
 
     def create_interventions(
         self,

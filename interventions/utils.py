@@ -65,7 +65,7 @@ class InterventionBase:
             print(f"There seems to be misalignment for {word} in {sent}")
 
 
-    def load_model(self, model_name: str):
+    def load_model(self, model_name: str, cache_dir: str=None, device: str="cpu"):
         if model_name.startswith("albert"):
             from transformers import AlbertTokenizer, AlbertForMaskedLM
             from skeletons.skeleton_modeling_albert import SkeletonAlbertForMaskedLM
@@ -93,6 +93,14 @@ class InterventionBase:
             self.skeleton_model = SkeletonRobertaForMaskedLM
             self.mask_id = self.tokenizer(self.tokenizer.mask_token).input_ids[1]
 
+        elif model_name.startswith("llama2"):
+            from transformers import AutoTokenizer, LlamaForCausalLM
+            from skeletons.skeleton_modeling_llama import SkeletonLlamaForCausalLM
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name,cache_dir=cache_dir)
+            self.model = LlamaForCausalLM.from_pretrained(model_name,cache_dir=cache_dir)
+            self.model.eval()
+            self.model.to(device)
+            self.skeleton_model = SkeletonLlamaForCausalLM(self.model)
         else:
             raise NotImplementedError
 
