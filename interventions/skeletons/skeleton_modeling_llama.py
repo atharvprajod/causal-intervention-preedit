@@ -26,6 +26,7 @@ class SkeletonLlamaForCausalLM():
         self.model = model.model
         self.lm_head = model.lm_head
         self.hidden_size = model.config.hidden_size
+        self.num_layers = model.config.num_hidden_layers
         self.num_heads = model.config.num_attention_heads
         self.head_dim = self.hidden_size // self.num_heads
     
