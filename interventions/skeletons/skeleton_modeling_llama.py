@@ -50,8 +50,9 @@ class SkeletonLlamaForCausalLM():
             hidden = self.model.embed_tokens(input_ids)
             output_hidden.append(hidden)
             (batch_size, seq_len) = hidden.shape[:2]
-            attention_mask = torch.ones((batch_size, seq_len), dtype=torch.bool, device=hidden.device)
-            attention_mask = self.model._prepare_decoder_attention_mask(attention_mask, (batch_size, seq_len), hidden, 0)
+            #attention_mask = torch.ones((batch_size, seq_len), dtype=torch.bool, device=hidden.device)
+            #attention_mask = self.model._prepare_decoder_attention_mask(attention_mask, (batch_size, seq_len), hidden, 0)
+            attention_mask = self.model._update_causal_mask(attention_mask, hidden)
             for layer_id, layer in enumerate(self.model.layers):
                 res = hidden
                 hidden = layer.input_layernorm(hidden)
