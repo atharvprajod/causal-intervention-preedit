@@ -11,13 +11,10 @@ def rotate_half(x):
     x2 = x[..., x.shape[-1] // 2 :]
     return torch.cat((-x2, x1), dim=-1)
 
-#copied from https://github.com/huggingface/transformers/blob/b71f20a7c9f3716d30f6738501559acf863e2c5c/src/transformers/models/llama/modeling_llama.py#L207
-def apply_rotary_pos_emb(q, k, cos, sin, position_ids):
-    # The first two dimensions of cos and sin are always 1, so we can `squeeze` them.
-    cos = cos.squeeze(1).squeeze(0)  # [seq_len, dim]
-    sin = sin.squeeze(1).squeeze(0)  # [seq_len, dim]
-    cos = cos[position_ids].unsqueeze(1)  # [bs, 1, seq_len, dim]
-    sin = sin[position_ids].unsqueeze(1)  # [bs, 1, seq_len, dim]
+#copied from https://github.com/huggingface/transformers/blob/a0857740c0e6127485c11476650314df3accc2b6/src/transformers/models/llama/modeling_llama.py#L180
+def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
+    cos = cos.unsqueeze(unsqueeze_dim)
+    sin = sin.unsqueeze(unsqueeze_dim)
     q_embed = (q * cos) + (rotate_half(q) * sin)
     k_embed = (k * cos) + (rotate_half(k) * sin)
     return q_embed, k_embed
@@ -30,6 +27,8 @@ class SkeletonLlamaForCausalLM():
         self.num_layers = model.config.num_hidden_layers
         self.num_heads = model.config.num_attention_heads
         self.head_dim = self.hidden_size // self.num_heads
+        self.num_key_value_heads = model.config.num_key_value_heads
+        self.num_key_value_groups = self.num_heads // self.num_key_value_heads
     
     def swap_reps(self, interv_info, orignl):
         new_state = orignl.clone()
@@ -61,7 +60,7 @@ class SkeletonLlamaForCausalLM():
                 key = layer.self_attn.k_proj(hidden)
                 val = layer.self_attn.v_proj(hidden)
 
-                hidden = self.swap_reps(interventions[layer_id]['lay'], hidden)
+                res = self.swap_reps(interventions[layer_id]['lay'], res)
                 qry = self.swap_reps(interventions[layer_id]['qry'], qry)
                 key = self.swap_reps(interventions[layer_id]['key'], key)
                 val = self.swap_reps(interventions[layer_id]['val'], val)
@@ -73,16 +72,29 @@ class SkeletonLlamaForCausalLM():
                 position_ids = torch.arange(seq_len, dtype=torch.long, device=hidden.device)
                 position_ids = position_ids.unsqueeze(0).view(-1, seq_len)
                 cos, sin = layer.self_attn.rotary_emb(split_val, position_ids)
-                split_qry, split_key = apply_rotary_pos_emb(split_qry, split_key, cos, sin, position_ids)
+                split_qry, split_key = apply_rotary_pos_emb(split_qry, split_key, cos, sin)
+
+                #split_key = repeat_kv(split_key, self.num_key_value_groups)
+                #split_val = repeat_kv(split_val, self.num_key_value_groups)
 
                 cache_position = torch.arange(seq_len, dtype=torch.long, device=hidden.device)
                 attention_mask = attention_mask[:, :, cache_position, :split_key.shape[-2]]
-                raw_attn = split_qry@split_key.permute(0,1,3,2)/math.sqrt(self.head_dim)
-                raw_attn = raw_attn + attention_mask.to(hidden.device)
-                attn = F.softmax(raw_attn, dim=-1, dtype=torch.float32).to(split_qry.dtype)
+                #raw_attn = split_qry@split_key.permute(0,1,3,2)/math.sqrt(self.head_dim)
+                #raw_attn = raw_attn + attention_mask.to(hidden.device)
+                #attn = F.softmax(raw_attn, dim=-1, dtype=torch.float32).to(split_qry.dtype)
 
-                trfm_indiv = attn@split_val
-                trfm = trfm_indiv.permute(0,2,1,3).reshape(*hidden.size())
+                #trfm_indiv = attn@split_val
+                #trfm = trfm_indiv.permute(0,2,1,3).reshape(*hidden.size())
+                trfm = torch.nn.functional.scaled_dot_product_attention(
+                    split_qry,
+                    split_key,
+                    split_val,
+                    attn_mask=attention_mask,
+                    dropout_p=0.0
+                    )
+                
+                trfm = trfm.transpose(1, 2).contiguous()
+                trfm = trfm.view(batch_size, seq_len, self.hidden_size)
 
                 trfm = self.swap_reps(interventions[layer_id]['trfm'], trfm)
 
