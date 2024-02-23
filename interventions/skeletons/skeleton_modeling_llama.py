@@ -75,8 +75,9 @@ class SkeletonLlamaForCausalLM():
                 cos, sin = layer.self_attn.rotary_emb(split_val, position_ids)
                 split_qry, split_key = apply_rotary_pos_emb(split_qry, split_key, cos, sin, position_ids)
 
+                cache_position = torch.arange(seq_len, dtype=torch.long, device=hidden.device)
+                attention_mask = attention_mask[:, :, cache_position, :split_key.shape[-2]]
                 raw_attn = split_qry@split_key.permute(0,1,3,2)/math.sqrt(self.head_dim)
-                print(raw_attn.shape,attention_mask.shape)
                 raw_attn = raw_attn + attention_mask.to(hidden.device)
                 attn = F.softmax(raw_attn, dim=-1, dtype=torch.float32).to(split_qry.dtype)
 
