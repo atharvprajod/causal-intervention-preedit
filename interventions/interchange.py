@@ -86,25 +86,25 @@ class InterchangeIntervention(InterventionBase):
             target_ids.append(token_ids)
         assert len(target_ids[0])==len(target_ids[1]), "targets do not have the same number of tokens"
 
-        '''
-        below needs to be updated
-        '''
         interventions = {}
-        for token_id in target_tokens:
-            for rep in ["lay", "qry", "key", "val"]:
-                if rep in rep_types:
-                    if multihead:
-                        interventions[rep] = [
-                            (head_id, token_id, [0, 1])
-                            for head_id in range(self.num_heads)
-                        ]
-                    else:
-                        interventions[rep] = [
-                            (head_id, token_id, [i, i + len(heads)])
-                            for i, head_id in enumerate(heads)
-                        ]
+        for rep in ["lay", "qry", "key", "val"]:
+            if rep in rep_types:
+                if multihead:
+                    interventions[rep] = [
+                        (head_id, [token_1,token_2], [0, 1])
+                        for token_1 in target_ids[0]
+                        for token_2 in target_ids[1]
+                        for head_id in range(self.num_heads)
+                    ]
                 else:
-                    interventions[rep] = []
+                    interventions[rep] = [
+                        (head_id, [token_1,token_2], [i, i + len(heads)])
+                        for token_1 in target_ids[0]
+                        for token_2 in target_ids[1]
+                        for i, head_id in enumerate(heads)
+                    ]
+            else:
+                interventions[rep] = []
         return interventions
 
     def run_interventions(
@@ -146,7 +146,7 @@ class InterchangeIntervention(InterventionBase):
             )
         probs = np.array(probs)
         assert (
-            probs.shape[0] == 2 and probs.shape[1] == 2 and probs.shape[2] == batch_size
+            probs.shape[0] == len(self.conts) and probs.shape[1] == 2 and probs.shape[2] == batch_size
         )
         return probs
 
