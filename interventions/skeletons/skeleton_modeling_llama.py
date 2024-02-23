@@ -72,7 +72,7 @@ class SkeletonLlamaForCausalLM():
 
                 position_ids = torch.arange(seq_len, dtype=torch.long, device=hidden.device)
                 position_ids = position_ids.unsqueeze(0).view(-1, seq_len)
-                cos, sin = layer.self_attn.rotary_emb(split_val, seq_len=seq_len)
+                cos, sin = layer.self_attn.rotary_emb(split_val, position_ids)
                 split_qry, split_key = apply_rotary_pos_emb(split_qry, split_key, cos, sin, position_ids)
 
                 raw_attn = split_qry@split_key.permute(0,1,3,2)/math.sqrt(self.head_dim)
