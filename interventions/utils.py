@@ -4,7 +4,7 @@ import itertools
 from transformers.configuration_utils import PretrainedConfig
 
 def extract_from_config(config: PretrainedConfig):
-    if config.model_type in ["albert", "bert", "roberta"]:
+    if config.model_type in ["albert", "bert", "roberta","llama"]:
         return config.num_hidden_layers, config.num_attention_heads
     elif config.model_type in ["gpt2"]:
         return config.n_layer, config.n_head
