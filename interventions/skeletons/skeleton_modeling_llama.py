@@ -97,7 +97,7 @@ class SkeletonLlamaForCausalLM():
                 if layer_id!=self.num_layers-1:
                     output_hidden.append(hidden)
             hidden = self.model.norm(hidden)
-            assert layer_id==len(self.num_layers)-1
+            assert layer_id==self.num_layers-1
             output_hidden.append(hidden)
             logits = self.lm_head(hidden)
         return {'logits':logits,'hidden_states':output_hidden}
