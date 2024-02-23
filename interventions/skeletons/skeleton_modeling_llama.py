@@ -1,3 +1,4 @@
+from typing import Optional
 import numpy as np
 import torch
 import math
@@ -38,7 +39,12 @@ class SkeletonLlamaForCausalLM():
             new_state[s[1],:,d*h:d*(h+1)][p[1],:] = orignl[s[0],:,d*h:d*(h+1)][p[0],:]
         return new_state.clone()
 
-    def forward(self,input_ids,interventions):
+    def __call__(
+            self,
+            input_ids,
+            attention_mask,
+            interventions,
+            ):
         output_hidden = []
         with torch.no_grad():
             hidden = self.model.embed_tokens(input_ids)
