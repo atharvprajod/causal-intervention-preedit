@@ -4,7 +4,7 @@ import itertools
 from transformers.configuration_utils import PretrainedConfig
 
 def extract_from_config(config: PretrainedConfig):
-    if config.model_type in ["albert", "bert", "roberta","llama"]:
+    if config.model_type in ["albert", "bert", "roberta", "llama"]:
         return config.num_hidden_layers, config.num_attention_heads
     elif config.model_type in ["gpt2"]:
         return config.n_layer, config.n_head
@@ -60,7 +60,7 @@ class InterventionBase:
         end_id: int,
     ):
         tokenized = self.tokenizer(sent).input_ids
-        target = " ".join([self.tokenizer.decode(token) for token in tokenized[start_id,:end_id]]).strip(' ,.;:!?').lower()
+        target = " ".join([self.tokenizer.decode(token) for token in tokenized[start_id:end_id]]).strip(' ,.;:!?').lower()
         if word.lower() not in [target,target,target.replace("'s","").replace(";s","").replace("’s","")]:
             print(f"There seems to be misalignment for {word} in {sent}")
 

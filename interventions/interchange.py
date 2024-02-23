@@ -87,7 +87,7 @@ class InterchangeIntervention(InterventionBase):
         assert len(target_ids[0])==len(target_ids[1]), "targets do not have the same number of tokens"
 
         interventions = {}
-        for rep in ["lay", "qry", "key", "val"]:
+        for rep in ["lay", "qry", "key", "val", "trfm"]:
             if rep in rep_types:
                 if multihead:
                     interventions[rep] = [
