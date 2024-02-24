@@ -92,15 +92,13 @@ class InterchangeIntervention(InterventionBase):
                 if multihead:
                     interventions[rep] = [
                         (head_id, [token_1,token_2], [0, 1])
-                        for token_1 in target_ids[0]
-                        for token_2 in target_ids[1]
+                        for token_1, token_2 in zip(target_ids[0], target_ids[1])
                         for head_id in range(self.num_heads)
                     ]
                 else:
                     interventions[rep] = [
                         (head_id, [token_1,token_2], [i, i + len(heads)])
-                        for token_1 in target_ids[0]
-                        for token_2 in target_ids[1]
+                        for token_1, token_2 in zip(target_ids[0], target_ids[1])
                         for i, head_id in enumerate(heads)
                     ]
             else:
@@ -152,42 +150,25 @@ class InterchangeIntervention(InterventionBase):
 
     def run(
         self,
-        targets: Tuple[str, str],
+        targets: Tuple[List[str],List[str]],
         rep_types: List[str],
         multihead: bool = True,
         heads: List[int] = [],
     ):
-        '''
-        below needs to be updated
-        '''
-        self.input_ids_1 = self.tokenizer(self.sents[0]).input_ids
-        self.input_ids_2 = self.tokenizer(self.sents[1]).input_ids
-
-        target_tokens_1 = self.convert_to_tokens(targets[0], self.sents[0])
-        target_tokens_2 = self.convert_to_tokens(targets[1], self.sents[1])
-        assert len(target_tokens_1) == len(target_tokens_2), "targets do not have the same number of tokens"
-        interventions_empty = {"lay": [], "qry": [], "key": [], "val": []}
+        probs = {}
         batch_size = 1 if multihead else len(heads)
-
-        # run without intervention
+        interventions_empty = {"lay": [], "qry": [], "key": [], "val": [], "trfm": []}
         interventions = [interventions_empty for i in range(self.num_layers)]
-        probs_origin = self.run_interventions(interventions, batch_size=1)
+        probs["original"] = self.run_interventions(interventions, batch_size=1)
 
+        interventions_layer = self.create_interventions(targets,rep_types,multihead,heads)
+        
         # run intervention for each layer
-        effect_list = []
         for layer_id in range(self.num_layers):
             interventions = [
                 interventions_layer if i == layer_id else interventions_empty
-                for i in range(num_layers)
+                for i in range(self.num_layers)
             ]
             probs_interv = self.run_interventions(interventions, batch_size=batch_size)
-
-            effect = (
-                (probs_origin - probs_interv)[0, 0]
-                + (probs_origin - probs_interv)[1, 1]
-                + (probs_interv - probs_origin)[0, 1]
-                + (probs_interv - probs_origin)[1, 0]
-            ) / 4
-
-            effect_list.append(effect)
-        return np.array(effect_list)
+            probs[f"interv_layer_{layer_id}"] = probs_interv
+        return probs
