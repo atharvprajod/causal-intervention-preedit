@@ -128,7 +128,7 @@ class InterchangeIntervention(InterventionBase):
                 padding="longest")
 
             outputs = self.skeleton_model(inputs_all["input_ids"], inputs_all["attention_mask"], interventions)
-            logprobs = F.log_softmax(outputs["logits"], dim=-1)
+            logprobs = F.log_softmax(outputs["logits"], dim=-1, dtype=torch.float32)
             logprobs_1, logprobs_2 = logprobs[:batch_size], logprobs[batch_size:]
 
             evals_1 = [
@@ -169,6 +169,6 @@ class InterchangeIntervention(InterventionBase):
                 interventions_layer if i == layer_id else interventions_empty
                 for i in range(self.num_layers)
             ]
-            probs_interv = self.run_interventions(interventions, batch_size=batch_size)
+            probs_interv = self.run_interventions(interventions, batch_size)
             probs[f"interv_layer_{layer_id}"] = probs_interv
         return probs
