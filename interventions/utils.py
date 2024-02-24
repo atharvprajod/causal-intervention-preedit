@@ -97,6 +97,7 @@ class InterventionBase:
             from transformers import AutoTokenizer, LlamaForCausalLM
             from .skeletons.skeleton_modeling_llama import SkeletonLlamaForCausalLM
             self.tokenizer = AutoTokenizer.from_pretrained(model_name,cache_dir=cache_dir)
+            self.tokenizer.pad_token = self.tokenizer.eos_token
             self.model = LlamaForCausalLM.from_pretrained(model_name,cache_dir=cache_dir)
             self.model.eval()
             self.model.to(device)
