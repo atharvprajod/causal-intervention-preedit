@@ -26,6 +26,10 @@ class InterventionBase:
             return tokenized[1:-1]
         elif "gpt2" in self.model.config.model_type:
             return tokenized
+        elif "llama" in self.model.config.model_type:
+            return tokenized[1:]
+        else:
+            raise NotImplementedError
 
     def convert_to_tokens(
         self,
