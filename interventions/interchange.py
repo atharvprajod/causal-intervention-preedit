@@ -119,15 +119,15 @@ class InterchangeIntervention(InterventionBase):
             sent_1 = self.sents[0] + " " + cont
             sent_2 = self.sents[1] + " " + cont
 
-            input_ids_all = self.tokenizer(
+            inputs_all = self.tokenizer(
                 [
                     *[sent_1 for _ in range(batch_size)],
                     *[sent_2 for _ in range(batch_size)],
                 ],
                 return_tensors="pt", 
-                padding="longest")["input_ids"]
+                padding="longest")
 
-            outputs = self.skeleton_model(self.model, input_ids_all, interventions)
+            outputs = self.skeleton_model(**inputs_all, interventions)
             logprobs = F.log_softmax(outputs["logits"], dim=-1)
             logprobs_1, logprobs_2 = logprobs[:batch_size], logprobs[batch_size:]
 
@@ -146,7 +146,7 @@ class InterchangeIntervention(InterventionBase):
         assert (
             probs.shape[0] == len(self.conts) and probs.shape[1] == 2 and probs.shape[2] == batch_size
         )
-        return probs
+        return np.array(probs)
 
     def run(
         self,
