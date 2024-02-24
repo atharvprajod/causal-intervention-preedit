@@ -60,7 +60,7 @@ class InterventionBase:
         end_id: int,
     ):
         tokenized = self.tokenizer(sent).input_ids
-        target = " ".join([self.tokenizer.decode(token) for token in tokenized[start_id:end_id]]).strip(' ,.;:!?').lower()
+        target = self.tokenizer.decode(tokenized[start_id:end_id]).strip(' ,.;:!?').lower()
         if word.lower() not in [target,target,target.replace("'s","").replace(";s","").replace("’s","")]:
             print(f"There seems to be misalignment for {word} in {sent}")
 
