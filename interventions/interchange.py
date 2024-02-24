@@ -127,7 +127,7 @@ class InterchangeIntervention(InterventionBase):
                 return_tensors="pt", 
                 padding="longest")
 
-            outputs = self.skeleton_model(**inputs_all, interventions)
+            outputs = self.skeleton_model(inputs_all["input_ids"], inputs_all["attention_mask"], interventions)
             logprobs = F.log_softmax(outputs["logits"], dim=-1)
             logprobs_1, logprobs_2 = logprobs[:batch_size], logprobs[batch_size:]
 
