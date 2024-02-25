@@ -52,8 +52,8 @@ class InterventionBase:
             raise ValueError(f"No match found for {word} in {sent}")
         elif messages=='multiple matches':
             print(f"Multiple matches found for {word} in {sent}")
-        sent_before = self.custom_split(sent)[:word_ids[0]]
-        sent_after = self.custom_split(sent)[:(word_ids[-1]+1)]
+        sent_before = custom_split(sent)[:word_ids[0]]
+        sent_after = custom_split(sent)[:(word_ids[-1]+1)]
         tokens_before = self.tokenizer(" ".join(sent_before)).input_ids
         tokens_after = self.tokenizer(" ".join(sent_after)).input_ids
         start_id = len(tokens_before)
@@ -119,8 +119,8 @@ class InterventionBase:
         word: str, 
         sent: str,
         ):
-        split_word = self.custom_split(word)
-        split_sent = self.custom_split(sent)
+        split_word = custom_split(word)
+        split_sent = custom_split(sent)
         # find each word in the phrase
         find_phrase = []
         for w in split_word:
