@@ -7,8 +7,10 @@
 
 ## Usage:
 ### (Only for gated models) Get access to the model
-In order to use a gated model like Llama, make sure that you have access to it on hugginface (e.g. at https://huggingface.co/meta-llama/Llama-2-7b-chat-hf).\\
-You also need to create an access token (https://huggingface.co/docs/hub/en/security-tokens).\\
+In order to use a gated model like Llama, make sure that you have access to it on hugginface (e.g. at https://huggingface.co/meta-llama/Llama-2-7b-chat-hf).
+
+You also need to create an access token (https://huggingface.co/docs/hub/en/security-tokens).
+
 Then run the following command in your terminal to log in to your huggingface account and add your token to the machine.
 ```{shell}
 huggingface-cli login
