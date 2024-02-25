@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from .utils import extract_from_config, InterventionBase
+from .utils import custom_split, extract_from_config, InterventionBase
 
 class InterchangeInterventionConfig:
     """
@@ -29,8 +29,8 @@ class InterchangeInterventionConfig:
         if sent_1==sent_2:
             return 0, "", ""
         else:
-            split_sent_1 = self.custom_split(sent_1)
-            split_sent_2 = self.custom_split(sent_2) 
+            split_sent_1 = custom_split(sent_1)
+            split_sent_2 = custom_split(sent_2)
             min_sent_len = min(len(split_sent_1),len(split_sent_2))
             # remove each word from the start until they are different
             word_id = 0

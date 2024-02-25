@@ -5,6 +5,9 @@ import torch
 import itertools
 from transformers.configuration_utils import PretrainedConfig
 
+def custom_split(text):
+    return re.split("[ \n]", text)
+
 def extract_from_config(config: PretrainedConfig):
     if config.model_type in ["albert", "bert", "roberta", "llama"]:
         return config.num_hidden_layers, config.num_attention_heads
@@ -21,9 +24,6 @@ class InterventionBase:
 
     def __init__(self, interv_type):
         self.interv_type = interv_type
-
-    def custom_split(self, text):
-        return re.split("[ \n]", text)
 
     def tokenize_without_sp_tokens(self, text: str):
         tokenized = self.tokenizer(text).input_ids
