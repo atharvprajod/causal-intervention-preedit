@@ -48,7 +48,7 @@ intervention_model = InterchangeIntervention("meta-llama/Llama-2-7b-chat-hf", co
 output = intervention_model.run(
     targets=["salamander", "dinosaur"], # target words to swap
     rep_type=["lay","qry","key","val"], # representations to swap
-    multihead=True)
+    multihead=True) # set multihead to True if swap all heads; otherwise set head=[list_of_head_ids]
 ```
 
 ## TODOs
