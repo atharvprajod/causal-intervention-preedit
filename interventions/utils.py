@@ -1,5 +1,6 @@
 from typing import Optional, Tuple, Union, List
 import numpy as np
+import torch
 import itertools
 from transformers.configuration_utils import PretrainedConfig
 
@@ -69,7 +70,7 @@ class InterventionBase:
             print(f'There seems to be misalignment for "{word}" in "{sent}"')
 
 
-    def load_model(self, model_name: str, cache_dir: str=None, device: str="cpu"):
+    def load_model(self, model_name: str, cache_dir: str=None, device: torch.device=torch.device("cpu")):
         if model_name.startswith("albert"):
             from transformers import AlbertTokenizer, AlbertForMaskedLM
             from skeletons.skeleton_modeling_albert import SkeletonAlbertForMaskedLM

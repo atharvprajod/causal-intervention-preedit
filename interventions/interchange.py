@@ -61,13 +61,21 @@ class InterchangeIntervention(InterventionBase):
     Performs interchange interventions
     """
 
-    def __init__(self, model_name, interv_config, **model_args):
+    def __init__(
+            self,
+            model_name:str=None,
+            interv_config:InterchangeInterventionConfig=None,
+            cache_dir:str=None,
+            device:torch.device=torch.device("cpu"),
+            ):
         super().__init__("interchange")
 
         self.sents = interv_config.sents
         self.conts = interv_config.conts
 
-        self.load_model(model_name, **model_args)
+        self.device = device
+
+        self.load_model(model_name, cache_dir, device)
         self.num_layers, self.num_heads = extract_from_config(self.model.config)
 
     def create_interventions(
@@ -125,7 +133,7 @@ class InterchangeIntervention(InterventionBase):
                     *[sent_2 for _ in range(batch_size)],
                 ],
                 return_tensors="pt", 
-                padding="longest")
+                padding="longest").to(self.device)
 
             outputs = self.skeleton_model(inputs_all["input_ids"], inputs_all["attention_mask"], interventions)
             logprobs = F.log_softmax(outputs["logits"], dim=-1, dtype=torch.float32)
