@@ -132,11 +132,11 @@ class InterchangeIntervention(InterventionBase):
             logprobs_1, logprobs_2 = logprobs[:batch_size], logprobs[batch_size:]
 
             evals_1 = [
-                logprobs_1[:, cont_start_1+i, token].numpy()
+                logprobs_1[:, cont_start_1+i, token].cpu().numpy()
                 for i, token in enumerate(cont_tokens)
             ]
             evals_2 = [
-                logprobs_2[:, cont_start_2+i, token].numpy()
+                logprobs_2[:, cont_start_2+i, token].cpu().numpy()
                 for i, token in enumerate(cont_tokens)
             ]
             probs.append(
