@@ -66,7 +66,7 @@ class InterventionBase:
         tokenized = self.tokenizer(sent).input_ids
         target = self.tokenizer.decode(tokenized[start_id:end_id]).strip(' ,.;:!?').lower()
         if word.lower() not in [target,target,target.replace("'s","").replace(";s","").replace("’s","")]:
-            print(f"There seems to be misalignment for {word} in {sent}")
+            print(f'There seems to be misalignment for "{word}" in "{sent}"')
 
 
     def load_model(self, model_name: str, cache_dir: str=None, device: str="cpu"):
