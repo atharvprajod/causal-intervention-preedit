@@ -1,4 +1,5 @@
 from typing import Optional, Tuple, Union, List
+import re
 import numpy as np
 import torch
 import itertools
@@ -20,6 +21,9 @@ class InterventionBase:
 
     def __init__(self, interv_type):
         self.interv_type = interv_type
+
+    def custom_split(self, text):
+        return re.split("[ \n]", text)
 
     def tokenize_without_sp_tokens(self, text: str):
         tokenized = self.tokenizer(text).input_ids
@@ -48,8 +52,8 @@ class InterventionBase:
             raise ValueError(f"No match found for {word} in {sent}")
         elif messages=='multiple matches':
             print(f"Multiple matches found for {word} in {sent}")
-        sent_before = sent.split(" ")[:word_ids[0]]
-        sent_after = sent.split(" ")[:(word_ids[-1]+1)]
+        sent_before = self.custom_split(sent)[:word_ids[0]]
+        sent_after = self.custom_split(sent)[:(word_ids[-1]+1)]
         tokens_before = self.tokenizer(" ".join(sent_before)).input_ids
         tokens_after = self.tokenizer(" ".join(sent_after)).input_ids
         start_id = len(tokens_before)
@@ -115,8 +119,8 @@ class InterventionBase:
         word: str, 
         sent: str,
         ):
-        split_word = word.split(" ")
-        split_sent = sent.split(" ")
+        split_word = self.custom_split(word)
+        split_sent = self.custom_split(sent)
         # find each word in the phrase
         find_phrase = []
         for w in split_word:
