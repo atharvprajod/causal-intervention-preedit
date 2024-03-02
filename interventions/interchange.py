@@ -80,18 +80,22 @@ class InterchangeIntervention(InterventionBase):
 
     def create_interventions(
         self,
-        targets: Tuple[List[str],List[str]], # tuple of target phrases (list of words)
+        targets: Union[Tuple[List[str],List[str]], Tuple[List[int],List[int]]], # tuple of target phrases (list of words or token ids)
         rep_types: List[str],
         multihead: bool = True,
         heads: List[int] = [],
     ):
-        # convert targets to tokens
-        target_ids = []
-        for phrase, sent in zip(targets, self.sents):
-            token_ids = []
-            for word in phrase:
-                token_ids.extend(self.convert_to_tokens(word, sent))
-            target_ids.append(token_ids)
+
+        if targets[0][0] is str:
+            # convert targets to tokens
+            target_ids = []
+            for phrase, sent in zip(targets, self.sents):
+                token_ids = []
+                for word in phrase:
+                    token_ids.extend(self.convert_to_tokens(word, sent))
+                target_ids.append(token_ids)
+        else:
+            target_ids = targets
         assert len(target_ids[0])==len(target_ids[1]), "targets do not have the same number of tokens"
 
         interventions = {}
@@ -158,7 +162,7 @@ class InterchangeIntervention(InterventionBase):
 
     def run(
         self,
-        targets: Tuple[List[str],List[str]],
+        targets: Union[Tuple[List[str],List[str]], Tuple[List[int],List[int]]],
         rep_types: List[str],
         multihead: bool = True,
         heads: List[int] = [],
