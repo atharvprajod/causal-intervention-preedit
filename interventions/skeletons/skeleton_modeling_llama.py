@@ -28,15 +28,16 @@ class SkeletonLlamaForCausalLM():
         self.num_heads = model.config.num_attention_heads
         self.head_dim = self.hidden_size // self.num_heads
     
-    def swap_reps(self, interv_info, orignl, layer_id, rep_type):
+    def swap_reps(self, layer_interventions, orignl):
         new_state = orignl.clone()
         d = self.head_dim
-        for h, p, s in interv_info.get(f'{rep_type}_{layer_id}', []):
-            # Ensure the intervention is within the bounds of the tensor
-            if s[0] < new_state.size(0) and s[1] < new_state.size(0) and p[0] < new_state.size(1) and p[1] < new_state.size(1):
+        for rep_type, interventions in layer_interventions.items():
+            for h, p, s in interventions:
+                # Assuming p and s are correctly structured for indexing
                 new_state[s[0], :, d*h:d*(h+1)][p[0], :] = orignl[s[1], :, d*h:d*(h+1)][p[1], :]
                 new_state[s[1], :, d*h:d*(h+1)][p[1], :] = orignl[s[0], :, d*h:d*(h+1)][p[0], :]
         return new_state
+
 
     @torch.no_grad()
     def __call__(self, input_ids, attention_mask, interventions):
@@ -53,12 +54,12 @@ class SkeletonLlamaForCausalLM():
             qry = layer.self_attn.q_proj(hidden)
             key = layer.self_attn.k_proj(hidden)
             val = layer.self_attn.v_proj(hidden)
-
+            layer_interventions = interventions[layer_id]
             # Apply interventions for 'layer', 'query', 'key', 'value'
-            res = self.swap_reps(interventions, res, layer_id, 'layer')
-            qry = self.swap_reps(interventions, qry, layer_id, 'query')
-            key = self.swap_reps(interventions, key, layer_id, 'key')
-            val = self.swap_reps(interventions, val, layer_id, 'value')
+            res = self.swap_reps(layer_interventions.get('lay', []), res)
+            qry = self.swap_reps(layer_interventions.get('qry', []), qry)
+            key = self.swap_reps(layer_interventions.get('key', []), key)
+            val = self.swap_reps(layer_interventions.get('val', []), val)
 
             split_qry, split_key = apply_rotary_pos_emb(qry, key, *layer.self_attn.rotary_emb(hidden, seq_len))
 
@@ -69,7 +70,7 @@ class SkeletonLlamaForCausalLM():
             trfm = trfm.transpose(1, 2).contiguous().view(batch_size, seq_len, self.hidden_size)
 
             # Apply 'trfm' interventions
-            trfm = self.swap_reps(interventions, trfm, layer_id, 'trfm')
+            trfm = self.swap_reps(layer_interventions.get('trfm', []), trfm)
 
             trfm = layer.self_attn.o_proj(trfm)
             hidden = res + trfm
