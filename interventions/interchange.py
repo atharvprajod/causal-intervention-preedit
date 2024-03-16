@@ -23,12 +23,16 @@ class InterchangeInterventionConfig:
         self.conts = conts
         self.contexts = self.find_context()
 
+    # essentially use it to identify the differences between 2 sentences
+    # so in case of com2sense, determine which is major variations that lead t
+    # false
     def find_context(self):
         sent_1 = self.sents[0]
         sent_2 = self.sents[1]
         if sent_1==sent_2:
             return 0, "", ""
         else:
+            # tokenize
             split_sent_1 = custom_split(sent_1)
             split_sent_2 = custom_split(sent_2)
             min_sent_len = min(len(split_sent_1),len(split_sent_2))
@@ -79,21 +83,23 @@ class InterchangeIntervention(InterventionBase):
         self.num_layers, self.num_heads = extract_from_config(self.model.config)
 
     def create_interventions(
-        self,
-        targets: Union[Tuple[List[str],List[str]], Tuple[List[int],List[int]]], # tuple of target phrases (list of words or token ids)
-        rep_types: List[str],
-        multihead: bool = True,
-        heads: List[int] = [],
+    self,
+    targets: Union[Tuple[List[str],List[str]], Tuple[List[int],List[int]]], # tuple of target phrases (list of words or token ids)
+    rep_types: List[str],
+    multihead: bool = True,
+    heads: List[int] = [],
     ):
-
-        if targets[0][0] is str:
-            # convert targets to tokens
+    # Check if the first element of the first tuple is a string to determine if conversion is needed
+        if isinstance(targets[0][0], str):
             target_ids = []
-            for phrase, sent in zip(targets, self.sents):
-                token_ids = []
-                for word in phrase:
-                    token_ids.extend(self.convert_to_tokens(word, sent))
-                target_ids.append(token_ids)
+            for target_group in targets:
+                token_ids_group = []
+                for word in target_group:
+                    tokenized_word = self.tokenizer(word, add_special_tokens=False)['input_ids']
+                    token_ids_group.extend(tokenized_word)
+                # Append the group as a single list if pairing is intended
+                target_ids.append(token_ids_group)
+            print(f'Target IDs (paired): {target_ids}')
         else:
             target_ids = targets
         assert len(target_ids[0])==len(target_ids[1]), "targets do not have the same number of tokens"
@@ -116,13 +122,16 @@ class InterchangeIntervention(InterventionBase):
             else:
                 interventions[rep] = []
         return interventions
-
+    # where big chunk of actual causal intervention is actually hapening
+    
     def run_interventions(
         self,
         interventions: dict,
         batch_size: int,
     ):
         probs = []
+        # go over all possible extensions to the sentence and assign
+        # probs to each continuation
         for cont in self.conts:
             cont_start_1 = len(self.tokenizer(self.sents[0]).input_ids)-1 # assumes gpt2 type tokenizer/model
             cont_start_2 = len(self.tokenizer(self.sents[1]).input_ids)-1 # assumes gpt2 type tokenizer/model
@@ -130,7 +139,7 @@ class InterchangeIntervention(InterventionBase):
 
             sent_1 = self.sents[0] + " " + cont
             sent_2 = self.sents[1] + " " + cont
-
+            # process input data as tensors for processing by Llama
             inputs_all = self.tokenizer(
                 [
                     *[sent_1 for _ in range(batch_size)],
@@ -138,7 +147,8 @@ class InterchangeIntervention(InterventionBase):
                 ],
                 return_tensors="pt", 
                 padding="longest").to(self.device)
-
+            # print(inputs_all)
+            print(f'interventions: {interventions}')
             outputs = self.skeleton_model(inputs_all["input_ids"], inputs_all["attention_mask"], interventions)
             logprobs = F.log_softmax(outputs["logits"], dim=-1, dtype=torch.float32)
             logprobs_1, logprobs_2 = logprobs[:batch_size], logprobs[batch_size:]

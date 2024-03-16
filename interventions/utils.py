@@ -111,6 +111,13 @@ class InterventionBase:
             self.model.eval()
             self.model.to(device)
             self.skeleton_model = SkeletonLlamaForCausalLM(self.model)
+        elif model_name.startswith("google/gemma"):
+            from transformers import GemmaForCausalLM, AutoTokenizer
+            from .skeletons.skeleton_modeling_gemma import SkeletonGemmaForCausalLM
+            tokenizer = AutoTokenizer.from_pretrained("google/gemma-7b")
+
+
+        
         else:
             raise NotImplementedError
 
