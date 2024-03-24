@@ -34,8 +34,10 @@ class SkeletonLlamaForCausalLM():
         new_state = orignl.clone()
         d = self.head_dim
         for h, p, s in interv_info:
-            new_state[s[0],:,d*h:d*(h+1)][p[0],:] = orignl[s[1],:,d*h:d*(h+1)][p[1],:]
-            new_state[s[1],:,d*h:d*(h+1)][p[1],:] = orignl[s[0],:,d*h:d*(h+1)][p[0],:]
+            seq_len = orignl.size(1)
+            if all(idx < seq_len for idx in s) and all(idx < seq_len for idx in p):
+                new_state[s[0],:,d*h:d*(h+1)][p[0],:] = orignl[s[1],:,d*h:d*(h+1)][p[1],:]
+                new_state[s[1],:,d*h:d*(h+1)][p[1],:] = orignl[s[0],:,d*h:d*(h+1)][p[0],:]
         return new_state.clone()
 
     def __call__(
@@ -80,12 +82,6 @@ class SkeletonLlamaForCausalLM():
                 cache_position = torch.arange(seq_len, dtype=torch.long, device=hidden.device)
                 attention_mask = attention_mask[:, :, cache_position, :split_key.shape[-2]]
 
-
-                #raw_attn = split_qry@split_key.permute(0,1,3,2)/math.sqrt(self.head_dim)
-                #raw_attn = raw_attn + attention_mask.to(hidden.device)
-                #attn = F.softmax(raw_attn, dim=-1, dtype=torch.float32).to(split_qry.dtype)
-                #trfm_indiv = attn@split_val
-                #trfm = trfm_indiv.permute(0,2,1,3).reshape(*hidden.size())
                 trfm = torch.nn.functional.scaled_dot_product_attention(
                     split_qry,
                     split_key,
